@@ -56,8 +56,8 @@ pub struct Region<
     /// Pending fluid ticks in this region.
     pub pending_fluid_ticks: Vec<PendingFluidTick>,
 
-    palette: Vec<BlockState>,
-    blocks: Vec<usize>,
+    pub palette: Vec<BlockState>,
+    pub blocks: Vec<usize>,
 }
 
 impl<BlockState, Entity, BlockEntity> Region<BlockState, Entity, BlockEntity>
@@ -66,6 +66,9 @@ where
     Entity: mcdata::Entity + Serialize + DeserializeOwned,
     BlockEntity: mcdata::BlockEntity + Serialize + DeserializeOwned,
 {
+
+
+
     /// Create a new, empty region with the given name, position, and size.
     pub fn new(name: impl Into<CowStr>, position: BlockPos, size: BlockPos) -> Self {
         Self {
