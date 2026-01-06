@@ -163,18 +163,12 @@ dependencies = [
 
 [[package]]
 name = "bounded-integer"
-version = "0.5.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "102dbef1187b1893e6dfe05a774e79fd52265f49f214f6879c8ff49f52c8188b"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "bounded-integer"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfb439fc02606b667a4422a1667bfa6e4574223f7f6062518a41d399697a657"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "built"
@@ -734,10 +728,8 @@ dependencies = [
 [[package]]
 name = "mcdata"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1cd095965f2517e40d09d222add886f5fcc88c37293f494fd51450512f5bdcd"
 dependencies = [
- "bounded-integer 0.5.8",
+ "bounded-integer",
  "either",
  "fastnbt",
  "serde",
@@ -1114,7 +1106,7 @@ dependencies = [
 name = "rustmatica"
 version = "0.5.2"
 dependencies = [
- "bounded-integer 0.6.1",
+ "bounded-integer",
  "chrono",
  "document-features",
  "fastnbt",
@@ -1236,23 +1228,22 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "strum"
-version = "0.26.3"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 dependencies = [
  "strum_macros",
 ]
 
 [[package]]
 name = "strum_macros"
-version = "0.26.4"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "rustversion",
  "syn",
 ]
 

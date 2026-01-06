@@ -1,56 +1,60 @@
 use fastnbt::{IntArray, LongArray};
 use mcdata::{util::BlockPos, GenericBlockEntity, GenericBlockState, GenericEntity};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap, marker::PhantomData};
 
 type CowStr = std::borrow::Cow<'static, str>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Litematic<
-    BlockState = GenericBlockState,
-    Entity = GenericEntity,
-    BlockEntity = GenericBlockEntity,
+    'a,
+    BlockState = GenericBlockState<'a>,
+    Entity = GenericEntity<'a>,
+    BlockEntity = GenericBlockEntity<'a>,
 > where
     BlockState: mcdata::BlockState,
     Entity: mcdata::Entity,
     BlockEntity: mcdata::BlockEntity,
 {
     #[serde(flatten)]
-    pub regions: LitematicRegions<BlockState, Entity, BlockEntity>,
+    pub regions: LitematicRegions<'a, BlockState, Entity, BlockEntity>,
     #[serde(flatten)]
-    pub metadata: LitematicMetadata,
+    pub metadata: LitematicMetadata<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct LitematicRegions<
-    BlockState = GenericBlockState,
-    Entity = GenericEntity,
-    BlockEntity = GenericBlockEntity,
+    'a,
+    BlockState = GenericBlockState<'a>,
+    Entity = GenericEntity<'a>,
+    BlockEntity = GenericBlockEntity<'a>,
 > where
     BlockState: mcdata::BlockState,
     Entity: mcdata::Entity,
     BlockEntity: mcdata::BlockEntity,
 {
-    pub regions: HashMap<String, Region<BlockState, Entity, BlockEntity>>,
+    pub regions: HashMap<String, Region<'a, BlockState, Entity, BlockEntity>>,
+    pub p: PhantomData<&'a ()>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
-pub struct LitematicMetadata {
+pub struct LitematicMetadata<'a> {
     pub minecraft_data_version: i32,
     pub version: i32,
     pub sub_version: Option<i32>,
-    pub metadata: Metadata,
+    pub metadata: Metadata<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Region<
-    BlockState = GenericBlockState,
-    Entity = GenericEntity,
-    BlockEntity = GenericBlockEntity,
+    'a,
+    BlockState = GenericBlockState<'a>,
+    Entity = GenericEntity<'a>,
+    BlockEntity = GenericBlockEntity<'a>,
 > where
     BlockState: mcdata::BlockState,
     Entity: mcdata::Entity,
@@ -67,14 +71,15 @@ pub struct Region<
     pub pending_block_ticks: Vec<PendingBlockTick>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_fluid_ticks: Vec<PendingFluidTick>,
+    pub p: PhantomData<&'a ()>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
-pub struct Metadata {
-    pub name: String,
-    pub author: String,
-    pub description: String,
+pub struct Metadata<'a> {
+    pub name: Cow<'a, str>,
+    pub author: Cow<'a, str>,
+    pub description: Cow<'a, str>,
     pub region_count: i32,
     pub total_volume: i32,
     pub total_blocks: i64,

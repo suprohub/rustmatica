@@ -1,5 +1,5 @@
 [workspace.dependencies]
-mcdata = { version = "0.6", features = ["serde"] }
+mcdata = { path = "../mcdata" }
 
 [package]
 name = "rustmatica"
@@ -32,6 +32,7 @@ _mcdata-all = ["mcdata/entities", "mcdata/block-entities", "mcdata/mc-all"]
 
 [dependencies]
 document-features = { version = "0.2", optional = true }
+#simdnbt = "0.9"
 fastnbt = "2.6"
 flate2 = "1.1"
 image = { version = "0.25", optional = true }

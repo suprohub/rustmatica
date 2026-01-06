@@ -1,12 +1,10 @@
-use std::ops::RangeInclusive;
+use std::{borrow::Cow, marker::PhantomData, ops::RangeInclusive};
 
 use fastnbt::LongArray;
 use mcdata::{util::BlockPos, GenericBlockEntity, GenericBlockState, GenericEntity};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{schema, Litematic, PendingBlockTick, PendingFluidTick};
-
-type CowStr = std::borrow::Cow<'static, str>;
 
 /// A single region of a litematica schematic.
 ///
@@ -21,16 +19,17 @@ type CowStr = std::borrow::Cow<'static, str>;
 /// and [`blocks`](Self::blocks) functions.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Region<
-    BlockState = GenericBlockState,
-    Entity = GenericEntity,
-    BlockEntity = GenericBlockEntity,
+    'a,
+    BlockState = GenericBlockState<'a>,
+    Entity = GenericEntity<'a>,
+    BlockEntity = GenericBlockEntity<'a>,
 > where
     BlockState: mcdata::BlockState + Serialize + DeserializeOwned,
     Entity: mcdata::Entity + Serialize + DeserializeOwned,
     BlockEntity: mcdata::BlockEntity + Serialize + DeserializeOwned,
 {
     /// The name of this region.
-    pub name: CowStr,
+    pub name: Cow<'a, str>,
 
     /// The position of this region within the schematic.
     pub position: BlockPos,
@@ -60,14 +59,14 @@ pub struct Region<
     blocks: Vec<usize>,
 }
 
-impl<BlockState, Entity, BlockEntity> Region<BlockState, Entity, BlockEntity>
+impl<'a, BlockState, Entity, BlockEntity> Region<'a, BlockState, Entity, BlockEntity>
 where
     BlockState: mcdata::BlockState + Serialize + DeserializeOwned,
     Entity: mcdata::Entity + Serialize + DeserializeOwned,
     BlockEntity: mcdata::BlockEntity + Serialize + DeserializeOwned,
 {
     /// Create a new, empty region with the given name, position, and size.
-    pub fn new(name: impl Into<CowStr>, position: BlockPos, size: BlockPos) -> Self {
+    pub fn new(name: impl Into<Cow<'a, str>>, position: BlockPos, size: BlockPos) -> Self {
         Self {
             name: name.into(),
             position,
@@ -84,16 +83,17 @@ where
     /// Construct a [`Region`] from a [raw NBT region](schema::Region) with the given name.
     pub(crate) fn from_raw(
         raw: schema::Region<BlockState, Entity, BlockEntity>,
-        name: impl Into<CowStr>,
+        name: impl Into<Cow<'a, str>>,
     ) -> Self {
         fn inner<
+            'a,
             B: mcdata::BlockState + Serialize + DeserializeOwned,
             E: mcdata::Entity + Serialize + DeserializeOwned,
             T: mcdata::BlockEntity + Serialize + DeserializeOwned,
         >(
             raw: schema::Region<B, E, T>,
-            name: CowStr,
-        ) -> Region<B, E, T> {
+            name: Cow<'a, str>,
+        ) -> Region<'a, B, E, T> {
             let mut new = Region::new(name, raw.position, raw.size);
             new.palette = raw.block_state_palette.to_owned();
             new.block_entities = raw.tile_entities.to_owned();
@@ -132,6 +132,7 @@ where
             pending_block_ticks: self.pending_block_ticks.clone(),
             pending_fluid_ticks: self.pending_fluid_ticks.clone(),
             block_states: LongArray::new(vec![]),
+            p: PhantomData::default(),
         };
 
         let num_bits = self.num_bits();
@@ -494,9 +495,9 @@ where
     /// as its only region.
     pub fn as_litematic(
         self,
-        description: impl Into<CowStr>,
-        author: impl Into<CowStr>,
-    ) -> Litematic<BlockState, Entity, BlockEntity> {
+        description: impl Into<Cow<'a, str>>,
+        author: impl Into<Cow<'a, str>>,
+    ) -> Litematic<'a, BlockState, Entity, BlockEntity> {
         let mut l = Litematic::new(self.name.clone(), description, author);
         l.regions.push(self);
         l

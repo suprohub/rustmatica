@@ -1,8 +1,5 @@
 use std::{
-    collections::HashMap,
-    fs::File,
-    io::{Read, Write},
-    path::Path,
+    borrow::Cow, collections::HashMap, fs::File, io::{Read, Write}, marker::PhantomData, path::Path
 };
 
 use fastnbt::IntArray;
@@ -31,8 +28,6 @@ use super::Region;
 const SCHEMATIC_VERSION: i32 = 6;
 const SCHEMATIC_VERSION_SUB: i32 = 1;
 
-type CowStr = std::borrow::Cow<'static, str>;
-
 /// Metadata for a litematica schematic.
 ///
 /// Metadata can be read without reading the schematic contents using for example
@@ -41,15 +36,15 @@ type CowStr = std::borrow::Cow<'static, str>;
 /// This might be useful if you want to choose the generic types based on e.g. the
 /// [Minecraft data version](Self::minecraft_data_version).
 #[derive(Debug)]
-pub struct LitematicMetadata {
+pub struct LitematicMetadata<'a> {
     /// The name of this schematic.
-    pub name: CowStr,
+    pub name: Cow<'a, str>,
 
     /// The description of this schematic.
-    pub description: CowStr,
+    pub description: Cow<'a, str>,
 
     /// The author of this schematic.
-    pub author: CowStr,
+    pub author: Cow<'a, str>,
 
     /// The litematica format version this schematic was created with.
     pub version: i32,
@@ -114,22 +109,23 @@ pub struct LitematicMetadata {
 /// [`Region::pos_to_global`] and [`Region::pos_from_global`].
 #[derive(Debug)]
 pub struct Litematic<
-    BlockState = GenericBlockState,
-    Entity = GenericEntity,
-    BlockEntity = GenericBlockEntity,
+    'a,
+    BlockState = GenericBlockState<'a>,
+    Entity = GenericEntity<'a>,
+    BlockEntity = GenericBlockEntity<'a>,
 > where
     BlockState: mcdata::BlockState + Serialize + DeserializeOwned,
     Entity: mcdata::Entity + Serialize + DeserializeOwned,
     BlockEntity: mcdata::BlockEntity + Serialize + DeserializeOwned,
 {
     /// The list of [`Region`]s in this schematic.
-    pub regions: Vec<Region<BlockState, Entity, BlockEntity>>,
+    pub regions: Vec<Region<'a, BlockState, Entity, BlockEntity>>,
 
     /// The metadata of this schematic.
-    pub metadata: LitematicMetadata,
+    pub metadata: LitematicMetadata<'a>,
 }
 
-impl<BlockState, Entity, BlockEntity> Litematic<BlockState, Entity, BlockEntity>
+impl<'a, BlockState, Entity, BlockEntity> Litematic<'a, BlockState, Entity, BlockEntity>
 where
     BlockState: mcdata::BlockState + Serialize + DeserializeOwned,
     Entity: mcdata::Entity + Serialize + DeserializeOwned,
@@ -137,9 +133,9 @@ where
 {
     /// Create a new, empty schematic with the given name, description, and author.
     pub fn new(
-        name: impl Into<CowStr>,
-        description: impl Into<CowStr>,
-        author: impl Into<CowStr>,
+        name: impl Into<Cow<'a, str>>,
+        description: impl Into<Cow<'a, str>>,
+        author: impl Into<Cow<'a, str>>,
     ) -> Self {
         let now = util::current_time();
         Self {
@@ -162,7 +158,7 @@ where
     /// existing metadata.
     pub(crate) fn from_raw(
         raw_regions: schema::LitematicRegions<BlockState, Entity, BlockEntity>,
-        metadata: LitematicMetadata,
+        metadata: LitematicMetadata<'a>,
     ) -> Self {
         Self {
             regions: raw_regions
@@ -182,16 +178,16 @@ where
                 for region in self.regions.iter() {
                     map.insert(region.name.clone().into_owned(), region.to_raw());
                 }
-                schema::LitematicRegions { regions: map }
+                schema::LitematicRegions { regions: map, p: PhantomData::default() }
             },
             metadata: schema::LitematicMetadata {
                 version: self.metadata.version,
                 sub_version: self.metadata.sub_version,
                 minecraft_data_version: self.metadata.minecraft_data_version,
                 metadata: schema::Metadata {
-                    name: self.metadata.name.clone().into_owned(),
-                    description: self.metadata.description.clone().into_owned(),
-                    author: self.metadata.author.clone().into_owned(),
+                    name: self.metadata.name.clone(),
+                    description: self.metadata.description.clone(),
+                    author: self.metadata.author.clone(),
                     region_count: self.regions.len() as i32,
                     total_blocks: self.total_blocks(),
                     total_volume: self.total_volume(),
@@ -239,7 +235,7 @@ where
     /// Load a schematic from uncompressed bytes and use the exising metadata.
     pub fn from_uncompressed_bytes_with_metadata(
         bytes: &[u8],
-        metadata: LitematicMetadata,
+        metadata: LitematicMetadata<'a>,
     ) -> Result<Self> {
         Ok(Self::from_raw(fastnbt::from_bytes(bytes)?, metadata))
     }
@@ -258,7 +254,7 @@ where
     }
 
     /// Load a schematic from gzip compressed bytes and use the existing metadata.
-    pub fn from_bytes_with_metadata(bytes: &[u8], metadata: LitematicMetadata) -> Result<Self> {
+    pub fn from_bytes_with_metadata(bytes: &[u8], metadata: LitematicMetadata<'a>) -> Result<Self> {
         let mut gz = GzDecoder::new(bytes);
         let mut extracted = vec![];
         gz.read_to_end(&mut extracted)?;
@@ -285,7 +281,7 @@ where
     /// Load a schematic from a file and use the existing metadata.
     pub fn read_file_with_metadata(
         filename: impl AsRef<Path>,
-        metadata: LitematicMetadata,
+        metadata: LitematicMetadata<'a>,
     ) -> Result<Self> {
         let mut file = File::open(filename)?;
         let mut bytes = vec![];
@@ -342,13 +338,13 @@ where
     }
 }
 
-impl LitematicMetadata {
+impl<'a> LitematicMetadata<'a> {
     /// Construct [`LitematicMetadata`] from [raw NBT litematic metadata](schema::LitematicMetadata).
-    pub(crate) fn from_raw(raw: schema::LitematicMetadata) -> Self {
+    pub(crate) fn from_raw(raw: schema::LitematicMetadata<'a>) -> Self {
         Self {
-            name: CowStr::Owned(raw.metadata.name),
-            description: CowStr::Owned(raw.metadata.description),
-            author: CowStr::Owned(raw.metadata.author),
+            name: raw.metadata.name,
+            description: raw.metadata.description,
+            author: raw.metadata.author,
             version: raw.version,
             sub_version: raw.sub_version,
             minecraft_data_version: raw.minecraft_data_version,
