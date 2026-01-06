@@ -171,14 +171,14 @@ where
     }
 
     /// Create a new [raw NBT litematic](schema::Litematic) from this [`Litematic`].
-    pub(crate) fn to_raw(&self) -> schema::Litematic<BlockState, Entity, BlockEntity> {
+    pub(crate) fn to_raw(&self) -> schema::Litematic<'_, BlockState, Entity, BlockEntity> {
         schema::Litematic {
             regions: {
                 let mut map = HashMap::new();
                 for region in self.regions.iter() {
                     map.insert(region.name.clone().into_owned(), region.to_raw());
                 }
-                schema::LitematicRegions { regions: map, p: PhantomData::default() }
+                schema::LitematicRegions { regions: map, p: PhantomData }
             },
             metadata: schema::LitematicMetadata {
                 version: self.metadata.version,

@@ -122,7 +122,7 @@ where
     }
 
     /// Create a new [raw NBT region](schema::Region) from this [`Region`].
-    pub(crate) fn to_raw(&self) -> schema::Region<BlockState, Entity, BlockEntity> {
+    pub(crate) fn to_raw(&self) -> schema::Region<'_, BlockState, Entity, BlockEntity> {
         let mut new = schema::Region {
             position: self.position,
             size: self.size,
@@ -132,7 +132,7 @@ where
             pending_block_ticks: self.pending_block_ticks.clone(),
             pending_fluid_ticks: self.pending_fluid_ticks.clone(),
             block_states: LongArray::new(vec![]),
-            p: PhantomData::default(),
+            p: PhantomData,
         };
 
         let num_bits = self.num_bits();
